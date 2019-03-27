@@ -1,0 +1,216 @@
+## Audio Signal Processing
+### Report
+*Raphaël Bricout*
+
+
+
+## Introduction
+
+
+### Présentation du problème
+Transcription automatique de la musique (AMT)
+<image src="./rapport/Images/problem.png">
+
+
+### Etat de l'art
+ - Pour la transcription musicale (AMT)
+   - techniques de reconaissance de parole
+ - Pour ce problème
+   - Chroma features et HMM
+ - Pour le deep learning
+   - deep belief networks (DBN)
+   - CNN
+
+
+
+## Les grandes lignes
+
+
+### Le papier
+
+Zhou, Xinquan and Lerch, Alexander (2015)
+
+**Chord detection using deep learning**
+
+*proceedings of the 16th ISMIR Conference* 53.
+
+
+### Idées du papier
+ - reconaissance d'accords
+ - deep learning
+ - comparaison de différentes optimisations
+
+
+### Grandes lignes
+<image src="./rapport/Images/overview_rapport.png" control style="width:60%"></image>
+
+
+### Idées de la présentation
+ - vue globale sur le système
+ - focus sur la CQT
+ - point de vue de musicien
+ - implémentation de quelques points
+
+
+
+## Traitement des données
+
+
+### Dans le papier
+ - constant Q transform (CQT)
+ - normalisation
+ - analyse en composantes principales (PCA)
+
+<image src="./rapport/Images/CQT_letitbe.png" control style="width:37%"></image>
+<image src="./rapport/Images/PCA.png" control style="width:50%"></image>
+
+
+### CQT
+Problème de la transformée de Fourier
+ - échelle linéaire pour les fréquences
+ - peu de coefficients pour les basses fréquences
+ - beaucoup de coefficients pour les hautes fréquences
+
+Idées de la CQT
+ - avoir la même précision pour chaque note
+ - avoir une échelle log pour les fréquences
+
+
+### CQT
+ - définir une échelle log : $f_{k+1} = 2^{k/n_0}f_0$
+ - definir $Q = \frac{f}{\delta f}$ le ratio fréquence sur largeur
+ - définir la taille de la fenêtre $ N[k] = \frac{S}{f_k}Q $
+ - définir une fenêtre $W$
+
+
+### CQT
+Alors, au lieu de (STFT) : 
+$$\hat x[k] = \sum_{n=0}^{N-1}W[n]x[n]e^{-2jk\pi n/N}$$
+
+On calcule (CQT) :
+
+$$\hat x[k] = \frac{1}{N[k]}\sum_{n=0}^{N[k]-1}W[k, n]x[n]e^{-2jQ\pi n/N[k]}$$
+
+
+### CQT vs STFT
+<image src="./rapport/Images/Sp_CQT.png" control style="width:48%"></image>
+<image src="./rapport/Images/Sp_stft.png" control style="width:48%"></image>
+
+CQT (gauche) et STFT (droite)
+
+
+### Autres traitements
+Pre-processing
+ - épissage (splicing)
+ - convolutions
+
+$\rightarrow$ améliore les résultats
+
+
+
+## Entraînement
+
+
+### Métrique
+
+$$ WCSR = \frac{1}{N}\sum_{k=1}^n C_k $$
+$\rightarrow$ pourcentage d'accords correctement prédits
+
+
+### RBM
+**Utile parce que**
+ - peu d'exemples
+ - architecture profonde et dense
+
+**Principe**
+ - definir un *a priori*
+ - algorithme rapide
+
+
+### Architecture
+"Goulot d'étranglement" (bottleneck)
+<image src="./rapport/Images/bottle_neck.png" control style="width:32%"></image>
+
+|                  | WCSR Train | WCSR Test |
+|------------------|------------|-----------|
+| Taille constante | 0.985      | 0.876     |
+| Bottleneck       | 0.936      | 0.919     |
+
+
+
+## Classification
+
+
+### Principe de reconnaissance vocale
+Modèle acoustique et modèle de langage
+<image src="./rapport/Images/NLP.png"></image>
+
+
+### Modèle de langage ?
+|                   | Speech                            | Music                                       |
+|-------------------|-----------------------------------|---------------------------------------------|
+| Élement global    | partie dans un discours           | structure d'une pièce (sonate, rondo, etc.) |
+| Élement de phrase | fonction grammaticale             | degré (eg. V-I, V, V-VI)                    |
+| Élement local     | règle grammaticale (accord, etc.) | règle d'harmonie (résolution...)            |
+
+
+### Modèle de langage ?
+
+Le langage musical
+
+<image src="./rapport/Images/local_audio.png" control style="width:30%"></image>
+<image src="./rapport/Images/bach_mim.png" control style="width:63%"></image>
+
+**Mais** : surapprentissage sur le style ?  
+**Mais** : *quid* de la tonalité ?
+
+
+### Modèle de Markov Caché
+<image src="./rapport/Images/HMM.jpg" control style="width:70%"></image>  
+avec $x_i$ les états des accords et $y_i$ les observations  
+
+|        | WCSR  |
+|--------|-------|
+| Argmax | 0.648 |
+| SVM    | 0.645 |
+| HMM    | 0.755 |
+
+
+
+## Données
+
+
+### Dataset
+ - Beatles
+ - RWB Pop
+ - Queen
+
+**Mais:** overfitting sur le style ?
+
+
+### Sortie
+Accords en Majeur ou mineur  
+Quid des autres ?  
+Problème de l'accord de septième
+<image src="./rapport/Images/septieme.png" control style="width:75%"></image>
+
+
+### Sortie
+Problème de l'accord de septième
+<image src="./rapport/Images/chords_7.png" control style="width:75%"></image>
+
+
+
+#### Credits
+ - https://github.com/edupoux/MVA_2019_SL/
+
+ - *Audio thumbnailing of popular music using chroma-based representations*, Mark A Bartsch and Gregory H Wakefield
+ - *Calculation of a constant q spectral transform*, Judith C Brown
+ - *Learning features from music audio with deep belief networks*, Philippe Hamel and Douglas Eck
+ - *A fast learning algorithm for deep belief nets*, Geoffrey E Hinton, Simon Osindero, and Yee-Whye Teh
+
+
+ - *Deep neural networks for acoustic modeling in speech recognition*, Geoffrey  Hinton,  Li  Deng,  Dong  Yu,  George  Dahl, et  al.
+ - *Chord segmentation and recognition using em-trained hidden markov models*, Alexander Sheh and Daniel PW Ellis
+ - *An end-to-end neural network for polyphonic piano music transcription*, Siddharth Sigtia, Emmanouil Benetos, and Simon Dixon
+ - *Chord detection using deep learning*, Xinquan Zhou and Alexander Lerch
